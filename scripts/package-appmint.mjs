@@ -1,9 +1,9 @@
-
 import {
   cp,
   copyFile,
   mkdir,
   readdir,
+  readFile,
   rm,
   stat,
 } from "node:fs/promises";
@@ -27,29 +27,48 @@ const zipFile = path.join(
 );
 
 if (!(await stat(source).catch(() => null))) {
-  throw new Error("A pasta .output/public não foi encontrada.");
+  throw new Error("Pasta .output/public não encontrada.");
 }
 
 if (!(await stat(shell).catch(() => null))) {
-  throw new Error("_shell.html não foi encontrado.");
+  throw new Error("_shell.html não encontrado.");
 }
 
 await rm(release, { recursive: true, force: true });
 await mkdir(appDir, { recursive: true });
 
-// Copia todos os arquivos públicos, incluindo assets e fontes.
 await cp(source, appDir, { recursive: true });
-
-// Cria a página inicial esperada pelo empacotador.
 await copyFile(shell, index);
+
+// Diagnóstico do HTML
+const html = await readFile(index, "utf8");
+
+console.log("\n========== DIAGNÓSTICO HTML ==========");
+console.log(html.slice(0, 10000));
+
+console.log("\n========== REFERÊNCIAS ==========");
+
+const references = html.match(
+  /(?:src|href)=["'][^"']+["']/g
+) || [];
+
+for (const reference of references) {
+  console.log(reference);
+}
+
+console.log("\n========== ARQUIVOS ==========");
+
+const files = await readdir(appDir);
+
+for (const file of files) {
+  console.log(file);
+}
 
 execFileSync("zip", ["-qr", zipFile, "."], {
   cwd: appDir,
 });
 
-const files = await readdir(appDir);
-
-console.log("Empacotamento concluído!");
-console.log("Página inicial: index.html");
-console.log("Arquivos copiados:", files.length);
+console.log("\n========== RESULTADO ==========");
+console.log("HTML:", index);
 console.log("ZIP:", zipFile);
+console.log("Empacotamento concluído!");
