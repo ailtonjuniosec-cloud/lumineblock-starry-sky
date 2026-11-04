@@ -29,14 +29,12 @@ jobs:
 
       - name: Diagnosticar arquivos gerados
         run: |
-          echo "=== RAIZ ==="
-          ls -la
-          echo "=== DIST ==="
-          ls -la dist || true
-          echo "=== OUTPUT ==="
-          ls -la .output || true
-          echo "=== HTML ENCONTRADOS ==="
-          find . -name "index.html" -not -path "*/node_modules/*" | head -50
+          echo "=== DIST COMPLETO ==="
+          find dist -maxdepth 5 -type f
+          echo "=== OUTPUT PUBLIC COMPLETO ==="
+          find .output/public -maxdepth 5 -type f
+          echo "=== SHELL HTML ==="
+          find . -name "_shell.html" -not -path "*/node_modules/*"
 
       - name: Preparar ZIP AppMint
         run: node scripts/package-appmint.mjs
