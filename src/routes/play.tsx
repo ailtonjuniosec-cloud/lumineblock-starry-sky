@@ -7,6 +7,8 @@ import { BOARD_SIZES, canPlace, findFullLines, isBoardSize, placePiece, type Boa
 import { useGame } from "@/game/useGame";
 import { haptic } from "@/lib/haptics";
 import { recordGame, useStats } from "@/lib/storage";
+import { useI18n } from "@/i18n";
+import { playSfx } from "@/lib/audio";
 
 export const Route = createFileRoute("/play")({
   validateSearch: (s: Record<string, unknown>): { size: BoardSize } => {
@@ -43,6 +45,8 @@ const BOARD_WIDTH = "min(calc(100vw - 24px), calc(100dvh - 320px), 520px)";
 function Game({ n }: { n: number }) {
   const { state, place, reset, clearFlash } = useGame(n);
   const stats = useStats();
+  const { t, n: nf } = useI18n();
+  const recordChimed = useRef(false);
   const [paused, setPaused] = useState(false);
   const [hover, setHover] = useState<{ index: number; r: number; c: number } | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -54,7 +58,7 @@ function Game({ n }: { n: number }) {
   const recorded = useRef(false);
   const startBest = useRef(stats.best);
   const best = Math.max(stats.best, state.score);
-  const sizeName = BOARD_SIZES.find((b) => b.size === n)?.name;
+  const sizeName = t(`size${n}` as "size8");
   const gap = gapFor(n);
 
   useEffect(() => {
@@ -76,9 +80,18 @@ function Game({ n }: { n: number }) {
       recorded.current = true;
       recordGame(state.score, n, state.lines);
       haptic([30, 60, 30]);
+      playSfx("gameOver");
     }
     if (!state.over) recorded.current = false;
   }, [state.over, state.score, state.lines, n]);
+
+  // Gentle sparkle the first time a run beats the previous personal best
+  useEffect(() => {
+    if (!recordChimed.current && startBest.current > 0 && state.score > startBest.current) {
+      recordChimed.current = true;
+      playSfx("record");
+    }
+  }, [state.score]);
 
   // Preview mask: ghost cells + lines that would clear
   const preview = useMemo(() => {
@@ -133,6 +146,7 @@ function Game({ n }: { n: number }) {
     drag.current = { index, piece, pitch: p, rect, lift: Math.max(40, p * 1.1) };
     setDragIndex(index);
     haptic(6);
+    playSfx("select");
     requestAnimationFrame(() => moveFloat(e.clientX, e.clientY));
   };
   const onPointerMove = (e: RPointerEvent<HTMLDivElement>) => {
@@ -150,6 +164,8 @@ function Game({ n }: { n: number }) {
       const placed = placePiece(state.board, n, d.piece, h.r, h.c);
       const { rows, cols } = findFullLines(placed, n);
       haptic(rows.length + cols.length ? [14, 40, 22] : 10);
+      const total = rows.length + cols.length;
+      playSfx(total > 1 ? "multi" : rows.length ? "line" : cols.length ? "column" : "place");
     } else if (d) haptic(4);
   }, [state.board, n, place]);
 
@@ -157,6 +173,7 @@ function Game({ n }: { n: number }) {
     haptic(12);
     setPaused(false);
     startBest.current = stats.best;
+    recordChimed.current = false;
     reset();
   };
 
@@ -167,32 +184,32 @@ function Game({ n }: { n: number }) {
     <main className="safe-pad relative z-10 mx-auto flex h-dvh w-full max-w-xl select-none flex-col items-center overflow-hidden px-3" style={{ touchAction: "none" }}>
       {/* HUD */}
       <header className="anim-rise flex w-full items-center gap-2" style={{ maxWidth: BOARD_WIDTH }}>
-        <button aria-label="Pausar" onClick={() => (haptic(8), setPaused(true))} className="glass press grid size-11 place-items-center rounded-2xl">
+        <button aria-label={t("pause")} onClick={() => (haptic(8), setPaused(true))} className="glass press grid size-11 place-items-center rounded-2xl">
           <Pause className="size-5" />
         </button>
         <div className="flex-1 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-            {n}×{n} · {sizeName}
+            <bdi>{n}×{n}</bdi> · {sizeName}
           </p>
         </div>
-        <button aria-label="Reiniciar" onClick={restart} className="glass press grid size-11 place-items-center rounded-2xl">
+        <button aria-label={t("restart")} onClick={restart} className="glass press grid size-11 place-items-center rounded-2xl">
           <RotateCcw className="size-5" />
         </button>
       </header>
 
       <div className="anim-rise mt-3 flex w-full items-end justify-between px-1" style={{ maxWidth: BOARD_WIDTH, animationDelay: "60ms" }}>
         <div>
-          <p className="text-xs font-semibold text-muted-foreground">Pontuação</p>
-          <p className="font-display text-4xl font-extrabold tabular-nums leading-tight text-gradient">{state.score.toLocaleString("pt-BR")}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{t("score")}</p>
+          <p className="font-display text-4xl font-extrabold tabular-nums leading-tight text-gradient">{nf(state.score)}</p>
         </div>
         <div className="glass-flat flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
           <Trophy className="size-4 text-primary" />
-          <span className="font-display font-bold tabular-nums">{best.toLocaleString("pt-BR")}</span>
+          <span className="font-display font-bold tabular-nums">{nf(best)}</span>
         </div>
       </div>
 
       {/* Board */}
-      <div className="relative mt-3 anim-rise" style={{ animationDelay: "120ms" }}>
+      <div dir="ltr" className="relative mt-3 anim-rise" style={{ animationDelay: "120ms" }}>
         <BoardView
           ref={gridRef}
           n={n}
@@ -206,13 +223,13 @@ function Game({ n }: { n: number }) {
         {state.lastGain && state.lastGain.lines > 0 && (
           <div key={state.lastGain.key} className="anim-score pointer-events-none absolute left-1/2 top-1/3 text-center">
             <p className="font-display text-3xl font-extrabold text-gradient">+{state.lastGain.value}</p>
-            {state.lastGain.combo > 1 && <p className="text-sm font-bold text-primary">Combo ×{state.lastGain.combo}</p>}
+            {state.lastGain.combo > 1 && <p className="text-sm font-bold text-primary">{t("combo", { n: state.lastGain.combo })}</p>}
           </div>
         )}
       </div>
 
       {/* Tray */}
-      <div className="mt-auto mb-2 grid w-full grid-cols-3 gap-2" style={{ maxWidth: BOARD_WIDTH, height: 130 }}>
+      <div dir="ltr" className="mt-auto mb-2 grid w-full grid-cols-3 gap-2" style={{ maxWidth: BOARD_WIDTH, height: 130 }}>
         {state.pieces.map((p, i) => (
           <div
             key={p ? p.id : `empty-${i}`}
@@ -242,33 +259,33 @@ function Game({ n }: { n: number }) {
           <div className="glass anim-pop w-full max-w-xs rounded-[32px] p-6 text-center">
             {state.over ? (
               <>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Fim de partida</p>
-                <p className="mt-3 font-display text-5xl font-extrabold text-gradient tabular-nums">{state.score.toLocaleString("pt-BR")}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">{t("gameOver")}</p>
+                <p className="mt-3 font-display text-5xl font-extrabold text-gradient tabular-nums">{nf(state.score)}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {newRecord ? "✦ Novo recorde pessoal!" : `Recorde: ${best.toLocaleString("pt-BR")}`}
+                  {newRecord ? t("newRecord") : t("recordValue", { n: nf(best) })}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{state.lines} linhas · {state.moves} jogadas</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("summary", { lines: nf(state.lines), moves: nf(state.moves) })}</p>
               </>
             ) : (
               <>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Pausado</p>
-                <p className="mt-3 font-display text-3xl font-bold tabular-nums">{state.score.toLocaleString("pt-BR")}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">{t("paused")}</p>
+                <p className="mt-3 font-display text-3xl font-bold tabular-nums">{nf(state.score)}</p>
               </>
             )}
             <div className="mt-6 flex flex-col gap-2">
               {!state.over && (
                 <button onClick={() => (haptic(8), setPaused(false))} className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-primary font-semibold text-primary-foreground shadow-glow">
-                  <PlayIcon className="size-5 fill-current" /> Continuar
+                  <PlayIcon className="size-5 fill-current" /> {t("resume")}
                 </button>
               )}
               <button
                 onClick={restart}
                 className={`press flex h-12 items-center justify-center gap-2 rounded-2xl font-semibold ${state.over ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground"}`}
               >
-                <RotateCcw className="size-5" /> {state.over ? "Jogar novamente" : "Reiniciar"}
+                <RotateCcw className="size-5" /> {state.over ? t("playAgain") : t("restart")}
               </button>
               <Link to="/" className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-secondary font-semibold text-secondary-foreground">
-                <Home className="size-5" /> Início
+                <Home className="size-5" /> {t("home")}
               </Link>
             </div>
           </div>
