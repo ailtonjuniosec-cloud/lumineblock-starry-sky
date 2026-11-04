@@ -1,3 +1,4 @@
+
 name: Build LumineBlock for AppMint
 
 on:
@@ -11,20 +12,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-            - name: Baixar projeto
+      - name: Baixar projeto
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
-          timeout-minutes: 3
 
-       - name: Instalar Bun
+      - name: Instalar Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
-          no-cache: true
 
       - name: Restaurar cache das dependências
         uses: actions/cache@v4
@@ -40,14 +40,12 @@ jobs:
       - name: Compilar LumineBlock
         run: bun run build
 
-      - name: Diagnosticar arquivos gerados
+      - name: Diagnosticar HTML
         run: |
-          echo "=== DIST COMPLETO ==="
-          find dist -maxdepth 5 -type f
-          echo "=== OUTPUT PUBLIC COMPLETO ==="
-          find .output/public -maxdepth 5 -type f
-          echo "=== SHELL HTML ==="
-          find . -name "_shell.html" -not -path "*/node_modules/*"
+          echo "=== HTML GERADO ==="
+          sed -n '1,200p' .output/public/_shell.html
+          echo "=== REFERÊNCIAS ==="
+          grep -oE '(src|href)="[^"]+"' .output/public/_shell.html || true
 
       - name: Preparar ZIP AppMint
         run: node scripts/package-appmint.mjs
@@ -59,3 +57,4 @@ jobs:
           path: release/LumineBlock-AppMint-Offline.zip
           if-no-files-found: error
           retention-days: 14
+          
