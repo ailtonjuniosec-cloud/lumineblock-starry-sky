@@ -1,0 +1,39 @@
+
+name: Build LumineBlock for AppMint
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Instalar Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      - name: Compilar LumineBlock
+        run: bun run build
+
+      - name: Preparar ZIP AppMint
+        run: node scripts/package-appmint.mjs
+
+      - name: Disponibilizar ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: LumineBlock-AppMint-Offline
+          path: release/LumineBlock-AppMint-Offline.zip
+          if-no-files-found: error
+          retention-days: 14
+          
