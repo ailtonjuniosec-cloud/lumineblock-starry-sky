@@ -1,11 +1,12 @@
+
 import {
   cp,
-  copyFile,
   mkdir,
   readdir,
   readFile,
   rm,
   stat,
+  writeFile,
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,37 +39,34 @@ await rm(release, { recursive: true, force: true });
 await mkdir(appDir, { recursive: true });
 
 await cp(source, appDir, { recursive: true });
-await copyFile(shell, index);
 
-// Diagnóstico do HTML
-const html = await readFile(index, "utf8");
+// Lê o HTML original.
+let html = await readFile(shell, "utf8");
 
-console.log("\n========== DIAGNÓSTICO HTML ==========");
-console.log(html.slice(0, 10000));
+// Converte caminhos absolutos em caminhos relativos.
+html = html.replace(/(["'])\/assets\//g, "$1./assets/");
+html = html.replace(/(["'])\/favicon\.ico/g, "$1./favicon.ico");
 
-console.log("\n========== REFERÊNCIAS ==========");
+// Cria o index.html corrigido.
+await writeFile(index, html, "utf8");
 
-const references = html.match(
-  /(?:src|href)=["'][^"']+["']/g
-) || [];
+// Confere as referências.
+console.log("=== REFERÊNCIAS CORRIGIDAS ===");
+console.log(
+  html.match(/(?:src|href)=["'][^"']+["']/g) || []
+);
 
-for (const reference of references) {
-  console.log(reference);
-}
-
-console.log("\n========== ARQUIVOS ==========");
-
-const files = await readdir(appDir);
-
-for (const file of files) {
-  console.log(file);
+if (html.includes('"/assets/')) {
+  throw new Error("Ainda existem referências absolutas no HTML.");
 }
 
 execFileSync("zip", ["-qr", zipFile, "."], {
   cwd: appDir,
 });
 
-console.log("\n========== RESULTADO ==========");
-console.log("HTML:", index);
-console.log("ZIP:", zipFile);
+const files = await readdir(appDir);
+
 console.log("Empacotamento concluído!");
+console.log("Página inicial: index.html");
+console.log("Arquivos na raiz:", files.length);
+console.log("ZIP:", zipFile);
