@@ -170,7 +170,7 @@ function Game({ n }: { n: number }) {
       const total = rows.length + cols.length;
       playSfx(total > 1 ? "multi" : rows.length ? "line" : cols.length ? "column" : "place");
     } else if (d) haptic(4);
-  }, [state.board, n, place]);
+  }, [state.board, n, place, over]);
 
   const restart = () => {
     haptic(12);
