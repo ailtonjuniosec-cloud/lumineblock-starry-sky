@@ -18,3 +18,4 @@
 - i18n: UI text lives in src/i18n/locales/<code>.json (one file per language, same keys as pt-BR.json) and is registered in src/i18n/languages.ts; only the active locale is lazy-loaded. Why: easy to add/review languages without runtime machine translation.
 - Audio is synthesized with Web Audio in src/lib/audio.ts (no audio files). Why: tiny bundle, original sounds, voice cap prevents overlap.
 - Board/tray geometry stays dir="ltr" even in RTL languages. Why: drag-and-drop math assumes left-to-right columns.
+- Piece availability and game over are re-derived from the current board on every render in play.tsx (plus reducer `over`). Why: never rely on a stale check after lines clear.
