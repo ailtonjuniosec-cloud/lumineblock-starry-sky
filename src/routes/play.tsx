@@ -3,7 +3,7 @@ import { Home, Pause, Play as PlayIcon, RotateCcw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { BoardView, gapFor } from "@/components/game/BoardView";
 import { PieceView } from "@/components/game/PieceView";
-import { BOARD_SIZES, canPlace, findFullLines, isBoardSize, placePiece, type BoardSize, type Piece } from "@/game/engine";
+import { canPlace, findFullLines, isBoardSize, placePiece, type BoardSize, type Piece } from "@/game/engine";
 import { useGame } from "@/game/useGame";
 import { haptic } from "@/lib/haptics";
 import { recordGame, useStats } from "@/lib/storage";

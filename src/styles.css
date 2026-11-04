@@ -65,20 +65,23 @@
 
   --glass: oklch(1 0.01 300 / 0.55);
   --glass-border: oklch(1 0 0 / 0.7);
-  --board: oklch(0.86 0.05 300 / 0.75);
-  --cell: oklch(0.97 0.015 300 / 0.85);
+  --board: oklch(0.945 0.03 300);
+  --board-border: oklch(0.84 0.06 298);
+  --cell: oklch(0.885 0.045 298);
+  --cell-edge: oklch(0.8 0.06 296);
   --star: oklch(0.6 0.16 300);
   --orb-1: oklch(0.8 0.12 305 / 0.7);
   --orb-2: oklch(0.85 0.09 280 / 0.6);
   --orb-3: oklch(0.88 0.08 330 / 0.5);
   --bg-gradient: linear-gradient(170deg, oklch(0.97 0.02 300), oklch(0.93 0.04 295) 55%, oklch(0.9 0.06 305));
 
-  --block-1: oklch(0.55 0.23 295);
-  --block-2: oklch(0.68 0.17 310);
-  --block-3: oklch(0.6 0.19 275);
-  --block-4: oklch(0.72 0.15 330);
-  --block-5: oklch(0.48 0.2 285);
-  --block-6: oklch(0.76 0.12 290);
+  --block-1: oklch(0.52 0.24 295);
+  --block-2: oklch(0.58 0.22 322);
+  --block-3: oklch(0.55 0.19 262);
+  --block-4: oklch(0.62 0.2 345);
+  --block-5: oklch(0.43 0.2 285);
+  --block-6: oklch(0.63 0.16 280);
+  --tile-edge: oklch(0.3 0.12 290 / 0.35);
 
   --gradient-primary: linear-gradient(135deg, oklch(0.6 0.23 300), oklch(0.5 0.24 285));
   --shadow-soft: 0 10px 30px -12px oklch(0.4 0.15 295 / 0.35);
@@ -107,20 +110,23 @@
 
   --glass: oklch(0.3 0.08 295 / 0.42);
   --glass-border: oklch(1 0 0 / 0.12);
-  --board: oklch(0.12 0.04 290 / 0.7);
-  --cell: oklch(0.26 0.06 292 / 0.6);
+  --board: oklch(0.2 0.075 292 / 0.92);
+  --board-border: oklch(0.38 0.1 296 / 0.6);
+  --cell: oklch(0.27 0.075 292);
+  --cell-edge: oklch(0.33 0.08 294);
   --star: oklch(0.95 0.04 300);
   --orb-1: oklch(0.45 0.2 300 / 0.55);
   --orb-2: oklch(0.38 0.16 275 / 0.5);
   --orb-3: oklch(0.45 0.17 330 / 0.35);
   --bg-gradient: linear-gradient(170deg, oklch(0.13 0.05 285), oklch(0.17 0.07 295) 50%, oklch(0.22 0.09 305));
 
-  --block-1: oklch(0.62 0.22 298);
-  --block-2: oklch(0.74 0.15 312);
-  --block-3: oklch(0.6 0.19 275);
-  --block-4: oklch(0.72 0.16 335);
-  --block-5: oklch(0.52 0.2 285);
-  --block-6: oklch(0.82 0.1 295);
+  --block-1: oklch(0.68 0.21 298);
+  --block-2: oklch(0.74 0.17 325);
+  --block-3: oklch(0.68 0.16 258);
+  --block-4: oklch(0.76 0.15 350);
+  --block-5: oklch(0.6 0.21 282);
+  --block-6: oklch(0.8 0.12 290);
+  --tile-edge: oklch(1 0 0 / 0.22);
 
   --gradient-primary: linear-gradient(135deg, oklch(0.72 0.18 305), oklch(0.56 0.23 288));
   --shadow-soft: 0 12px 34px -14px oklch(0 0 0 / 0.6);
@@ -183,9 +189,47 @@
     linear-gradient(155deg, oklch(1 0 0 / 0.45), oklch(1 0 0 / 0) 45%),
     var(--c);
   box-shadow:
-    inset 0 -3px 0 oklch(0 0 0 / 0.18),
-    inset 0 1px 0 oklch(1 0 0 / 0.45),
+    inset 0 0 0 1px var(--tile-edge),
+    inset 0 -3px 0 oklch(0 0 0 / 0.2),
+    inset 0 1px 0 oklch(1 0 0 / 0.4),
     0 2px 8px -2px color-mix(in oklab, var(--c) 70%, transparent);
+}
+
+/* Game board: opaque-ish surface, no backdrop blur (keeps drag & clear animations smooth) */
+@utility board-surface {
+  background: var(--board);
+  border: 1px solid var(--board-border);
+  box-shadow: var(--shadow-soft);
+}
+@utility cell {
+  background: var(--cell);
+  box-shadow: inset 0 0 0 1px var(--cell-edge), inset 0 2px 3px -1px oklch(0.2 0.08 290 / 0.18);
+}
+
+/* Volume slider */
+.volume {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  accent-color: var(--primary);
+}
+.volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+  border: 3px solid var(--card);
+}
+.volume::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--primary);
+  border: 3px solid var(--card);
 }
 
 /* Background scene */

@@ -20,7 +20,7 @@ const Cell = memo(function Cell({
   radius: number;
 }) {
   return (
-    <div className="relative bg-cell" style={{ borderRadius: radius }}>
+    <div className="cell relative" style={{ borderRadius: radius }}>
       {color > 0 && (
         <span
           className="tile anim-pop absolute inset-0"
@@ -79,7 +79,7 @@ export const BoardView = memo(
         />,
       );
     return (
-      <div className="glass rounded-3xl bg-board p-2" style={{ width }}>
+      <div className="board-surface rounded-3xl p-2" style={{ width }}>
         <div
           ref={gridRef}
           className="grid aspect-square w-full"
