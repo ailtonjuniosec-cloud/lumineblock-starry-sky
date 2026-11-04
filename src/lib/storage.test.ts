@@ -9,15 +9,25 @@ describe("stats", () => {
     expect(s.games).toBe(2);
     expect(s.last).toBe(80);
     expect(s.bestBySize).toEqual({ "8": 120, "5": 80 });
+    expect("history" in s).toBe(false);
   });
 });
 
 describe("settings", () => {
   it("persists preferences locally", () => {
-    settingsStore.set({ theme: "dark", boardSize: 12, haptics: false });
+    settingsStore.set({ theme: "dark", boardSize: 12, haptics: false, sfx: false, ambient: true, ambientVolume: 0.25, language: "ar" });
     const saved = JSON.parse(localStorage.getItem("lumineblock.settings")!);
     expect(saved.theme).toBe("dark");
     expect(saved.boardSize).toBe(12);
     expect(saved.haptics).toBe(false);
+    expect(saved.sfx).toBe(false);
+    expect(saved.ambient).toBe(true);
+    expect(saved.ambientVolume).toBe(0.25);
+    expect(saved.language).toBe("ar");
+  });
+  it("clamps volumes and rejects unknown languages", () => {
+    settingsStore.set({ sfxVolume: 3, language: "xx" as never });
+    expect(settingsStore.get().sfxVolume).toBe(1);
+    expect(settingsStore.get().language).toBe("auto");
   });
 });
