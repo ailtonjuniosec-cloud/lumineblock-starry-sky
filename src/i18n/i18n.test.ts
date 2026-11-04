@@ -18,9 +18,9 @@ describe("translations", () => {
   it("keeps placeholders in every language", () => {
     for (const l of LANGUAGES) {
       const d = files[`./locales/${l.code}.json`]!.default;
-      expect(d.combo).toContain("{n}");
-      expect(d.summary).toContain("{lines}");
-      expect(d.summary).toContain("{moves}");
+      expect(d["combo"]).toContain("{n}");
+      expect(d["summary"]).toContain("{lines}");
+      expect(d["summary"]).toContain("{moves}");
     }
   });
   it("formats variables", () => {
