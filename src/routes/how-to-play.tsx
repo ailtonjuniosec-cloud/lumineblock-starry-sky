@@ -105,7 +105,7 @@ function useSteps() {
         <>
           <P k="tut4a" /><P k="tut4b" />
           <div className="grid grid-cols-3 gap-2 py-1 text-center">
-            {[["1", "+10"], ["2", "+40"], ["3", "+90"]].map(([l, p]) => (
+            {[["1", "+10"], ["2", "+20"], ["3", "+30"]].map(([l, p]) => (
               <div key={l} className="glass-flat rounded-2xl py-2">
                 <p className="font-display text-lg font-extrabold text-gradient">{p}</p>
                 <p className="text-[11px] text-muted-foreground"><bdi>{l}×</bdi></p>
