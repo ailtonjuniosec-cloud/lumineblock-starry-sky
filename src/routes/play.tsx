@@ -300,12 +300,14 @@ function Game({ n }: { n: number }) {
                   <PlayIcon className="size-5 fill-current" /> {t("resume")}
                 </button>
               )}
-              <button
-                onClick={restart}
-                className={`press flex h-12 items-center justify-center gap-2 rounded-2xl font-semibold ${over ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground"}`}
-              >
-                <RotateCcw className="size-5" /> {t("restart")}
-              </button>
+              {over && (
+                <button
+                  onClick={restart}
+                  className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-primary font-semibold text-primary-foreground shadow-glow"
+                >
+                  <RotateCcw className="size-5" /> {t("restart")}
+                </button>
+              )}
               <Link to="/" className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-secondary font-semibold text-secondary-foreground">
                 <Home className="size-5" /> {over ? t("backHome") : t("home")}
               </Link>
