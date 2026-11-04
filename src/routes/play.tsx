@@ -23,6 +23,8 @@ export const Route = createFileRoute("/play")({
       { property: "og:description", content: "Jogue LumineBlock: encaixe blocos com fluidez." },
     ],
   }),
+  // Pieces are random: render only in the browser so the first frame matches.
+  ssr: false,
   component: PlayPage,
 });
 
