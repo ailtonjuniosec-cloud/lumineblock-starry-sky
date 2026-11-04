@@ -52,11 +52,12 @@ describe("engine", () => {
     expect(rc.cleared.size).toBe(5);
   });
 
-  it("scores cells, squares lines and multiplies combos", () => {
-    expect(scoreMove(4, 0, 3)).toBe(4);
-    expect(scoreMove(3, 1, 0)).toBe(13);
-    expect(scoreMove(3, 2, 0)).toBe(43);
-    expect(scoreMove(3, 1, 2)).toBe(33);
+  it("scores only cleared lines, 10 each", () => {
+    expect(scoreMove(0)).toBe(0);
+    expect(scoreMove(1)).toBe(10);
+    expect(scoreMove(2)).toBe(20);
+    expect(scoreMove(3)).toBe(30);
+    expect(scoreMove(5)).toBe(50);
   });
 
   it("detects game over when nothing fits", () => {

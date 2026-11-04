@@ -155,11 +155,14 @@ export function clearLines(board: Board, n: number, rows: number[], cols: number
   return { board: next, cleared };
 }
 
-/** Score for one move. combo = number of consecutive previous moves that cleared lines. */
-export function scoreMove(cellsPlaced: number, lines: number, combo: number): number {
-  if (lines === 0) return cellsPlaced;
-  return cellsPlaced + lines * lines * 10 * (1 + combo);
+/** Points per cleared row or column. Placing blocks alone scores nothing. */
+export const POINTS_PER_LINE = 10;
+/** Score for one move: 10 per distinct full row/column cleared, nothing else. */
+export function scoreMove(lines: number): number {
+  return lines * POINTS_PER_LINE;
 }
+/** Celebration tier 1..5 (5 = five or more lines); 0 = no clear. */
+export const comboTier = (lines: number) => Math.min(Math.max(lines, 0), 5);
 
 export interface MoveResult {
   board: Board;
@@ -182,6 +185,6 @@ export function applyMove(
   const { rows, cols } = findFullLines(placed, n);
   const lines = rows.length + cols.length;
   const { board: next, cleared } = clearLines(placed, n, rows, cols);
-  const gained = scoreMove(piece.shape.length, lines, combo);
+  const gained = scoreMove(lines);
   return { board: next, cleared, lines, gained, combo: lines ? combo + 1 : 0 };
 }

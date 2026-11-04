@@ -3,7 +3,7 @@ import { Home, Pause, Play as PlayIcon, RotateCcw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { BoardView, gapFor } from "@/components/game/BoardView";
 import { PieceView } from "@/components/game/PieceView";
-import { canPlace, canPlaceAnywhere, hasAnyMove, findFullLines, isBoardSize, placePiece, type BoardSize, type Piece } from "@/game/engine";
+import { canPlace, canPlaceAnywhere, comboTier, hasAnyMove, findFullLines, isBoardSize, placePiece, type BoardSize, type Piece } from "@/game/engine";
 import { useGame } from "@/game/useGame";
 import { haptic } from "@/lib/haptics";
 import { recordGame, useStats } from "@/lib/storage";
@@ -60,6 +60,7 @@ function Game({ n }: { n: number }) {
   const recorded = useRef(false);
   const startBest = useRef(stats.best);
   const best = Math.max(stats.best, state.score);
+  const shownScore = useCountUp(state.score);
   // Re-derived from the current board on every change: never a stale check.
   const fits = useMemo(() => state.pieces.map((p) => !!p && canPlaceAnywhere(state.board, n, p.shape)), [state.board, state.pieces, n]);
   const over = state.over || !hasAnyMove(state.board, n, state.pieces);
@@ -205,7 +206,7 @@ function Game({ n }: { n: number }) {
       <div className="anim-rise mt-3 flex w-full items-end justify-between px-1" style={{ maxWidth: BOARD_WIDTH, animationDelay: "60ms" }}>
         <div>
           <p className="text-xs font-semibold text-muted-foreground">{t("score")}</p>
-          <p className="font-display text-4xl font-extrabold tabular-nums leading-tight text-gradient">{nf(state.score)}</p>
+          <p key={state.score} className={`font-display text-4xl font-extrabold tabular-nums leading-tight text-gradient ${state.score ? "anim-pop" : ""}`}>{nf(shownScore)}</p>
         </div>
         <div className="glass-flat flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
           <Trophy className="size-4 text-primary" />
@@ -226,10 +227,19 @@ function Game({ n }: { n: number }) {
           width={BOARD_WIDTH}
         />
         {state.lastGain && state.lastGain.lines > 0 && (
-          <div key={state.lastGain.key} className="anim-score pointer-events-none absolute left-1/2 top-1/3 text-center">
-            <p className="font-display text-3xl font-extrabold text-gradient">+{state.lastGain.value}</p>
-            {state.lastGain.combo > 1 && <p className="text-sm font-bold text-primary">{t("combo", { n: state.lastGain.combo })}</p>}
-          </div>
+          <>
+            <div
+              key={`g${state.lastGain.key}`}
+              className="anim-burst pointer-events-none absolute inset-0 rounded-3xl"
+              style={{ ["--burst" as string]: 0.25 + comboTier(state.lastGain.lines) * 0.12 }}
+            />
+            <div key={state.lastGain.key} className="anim-combo pointer-events-none absolute left-1/2 top-1/3 whitespace-nowrap text-center">
+              <p className="font-display font-extrabold text-gradient" style={{ fontSize: 26 + comboTier(state.lastGain.lines) * 4 }}>
+                {t(`combo${comboTier(state.lastGain.lines)}` as "combo1")}
+              </p>
+              <p className="font-display text-xl font-bold text-primary">+{nf(state.lastGain.value)}</p>
+            </div>
+          </>
         )}
       </div>
 
@@ -305,4 +315,29 @@ function Game({ n }: { n: number }) {
       )}
     </main>
   );
+}
+
+/** Smoothly counts the displayed score up to the real value. */
+function useCountUp(target: number) {
+  const [v, setV] = useState(target);
+  const from = useRef(target);
+  useEffect(() => {
+    if (target <= from.current) {
+      from.current = target;
+      setV(target);
+      return;
+    }
+    const start = from.current, t0 = performance.now(), dur = 450;
+    let raf = 0;
+    const tick = (now: number) => {
+      const k = Math.min(1, (now - t0) / dur);
+      const val = Math.round(start + (target - start) * (1 - (1 - k) ** 3));
+      setV(val);
+      if (k < 1) raf = requestAnimationFrame(tick);
+      else from.current = target;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => (cancelAnimationFrame(raf), (from.current = target));
+  }, [target]);
+  return v;
 }
