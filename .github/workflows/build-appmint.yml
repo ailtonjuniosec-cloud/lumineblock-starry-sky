@@ -1,4 +1,3 @@
-
 name: Build LumineBlock for AppMint
 
 on:
@@ -27,17 +26,17 @@ jobs:
 
       - name: Compilar LumineBlock
         run: bun run build
-        
+
       - name: Diagnosticar arquivos gerados
         run: |
-       echo "=== RAIZ ==="
-       ls -la
-       echo "=== DIST ==="
-       ls -la dist || true
-       echo "=== OUTPUT ==="
-       ls -la .output || true
-       echo "=== HTML ENCONTRADOS ==="
-       find . -name "index.html" -not -path "*/node_modules/*" | head -50
+          echo "=== RAIZ ==="
+          ls -la
+          echo "=== DIST ==="
+          ls -la dist || true
+          echo "=== OUTPUT ==="
+          ls -la .output || true
+          echo "=== HTML ENCONTRADOS ==="
+          find . -name "index.html" -not -path "*/node_modules/*" | head -50
 
       - name: Preparar ZIP AppMint
         run: node scripts/package-appmint.mjs
@@ -49,4 +48,3 @@ jobs:
           path: release/LumineBlock-AppMint-Offline.zip
           if-no-files-found: error
           retention-days: 14
-          
