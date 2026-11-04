@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AudioSync, LocaleSync } from "../components/lumine/Sync";
 import { Scene } from "@/components/lumine/Scene";
 import { ThemeSync, themeBootScript } from "@/components/lumine/ThemeSync";
 
@@ -100,6 +101,8 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeSync />
+      <LocaleSync />
+      <AudioSync />
       <Scene />
       <Outlet />
     </QueryClientProvider>

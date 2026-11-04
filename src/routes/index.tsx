@@ -5,6 +5,8 @@ import { LogoMark, NavTile, Screen } from "@/components/lumine/ui";
 import { BOARD_SIZES } from "@/game/engine";
 import { haptic } from "@/lib/haptics";
 import { settingsStore, useSettings, useStats } from "@/lib/storage";
+import { useI18n } from "@/i18n";
+import { playSfx } from "@/lib/audio";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,6 +23,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { boardSize } = useSettings();
   const { best } = useStats();
+  const { t, n } = useI18n();
   return (
     <Screen>
       <div className="flex flex-1 flex-col px-5">
@@ -41,8 +44,8 @@ function Home() {
         <div className="anim-rise mb-4 flex items-center justify-center gap-2 text-sm" style={{ animationDelay: "120ms" }}>
           <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5">
             <Trophy className="size-4 text-primary" />
-            <span className="text-muted-foreground">Recorde</span>
-            <strong className="font-display tabular-nums">{best.toLocaleString("pt-BR")}</strong>
+            <span className="text-muted-foreground">{t("record")}</span>
+            <strong className="font-display tabular-nums">{n(best)}</strong>
           </span>
         </div>
 
@@ -55,12 +58,12 @@ function Home() {
         >
           <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-primary-foreground/25 to-transparent" />
           <Play className="size-6 fill-current" />
-          Jogar
+          {t("play")}
         </Link>
 
         <div className="anim-rise mt-4" style={{ animationDelay: "240ms" }}>
-          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tabuleiro</p>
-          <div className="glass flex gap-1 rounded-2xl p-1" role="radiogroup" aria-label="Tamanho do tabuleiro">
+          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("board")}</p>
+          <div className="glass flex gap-1 rounded-2xl p-1" role="radiogroup" aria-label={t("boardSize")} dir="ltr">
             {BOARD_SIZES.map((b) => {
               const active = b.size === boardSize;
               return (
@@ -70,6 +73,7 @@ function Home() {
                   aria-checked={active}
                   onClick={() => {
                     haptic(8);
+                    playSfx("select");
                     settingsStore.set({ boardSize: b.size });
                   }}
                   className={`press flex flex-1 flex-col items-center rounded-xl py-2 transition-colors ${
@@ -77,7 +81,7 @@ function Home() {
                   }`}
                 >
                   <span className="font-display text-sm font-bold">{b.size}×{b.size}</span>
-                  <span className="text-[10px] font-medium opacity-80">{b.name}</span>
+                  <span className="text-[10px] font-medium opacity-80">{t(`size${b.size}`)}</span>
                 </button>
               );
             })}
@@ -85,9 +89,9 @@ function Home() {
         </div>
 
         <nav className="anim-rise mt-4 mb-2 flex gap-3" style={{ animationDelay: "300ms" }}>
-          <NavTile to="/stats" icon={<BarChart3 className="size-5" />} label="Estatísticas" />
-          <NavTile to="/settings" icon={<Settings2 className="size-5" />} label="Ajustes" />
-          <NavTile to="/about" icon={<Info className="size-5" />} label="Sobre" />
+          <NavTile to="/stats" icon={<BarChart3 className="size-5" />} label={t("stats")} />
+          <NavTile to="/settings" icon={<Settings2 className="size-5" />} label={t("settings")} />
+          <NavTile to="/about" icon={<Info className="size-5" />} label={t("about")} />
         </nav>
       </div>
     </Screen>
