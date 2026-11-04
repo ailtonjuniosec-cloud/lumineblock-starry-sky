@@ -13,10 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar projeto
+            - name: Baixar projeto
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          timeout-minutes: 3
 
-      - name: Instalar Bun
+       - name: Instalar Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
