@@ -54,7 +54,7 @@ export function Panel({ children, className = "", delay = 0 }: { children: React
   );
 }
 
-export function NavTile({ to, icon, label }: { to: "/stats" | "/settings" | "/about"; icon: ReactNode; label: string }) {
+export function NavTile({ to, icon, label }: { to: "/stats" | "/settings" | "/about" | "/how-to-play"; icon: ReactNode; label: string }) {
   return (
     <Link
       to={to}
