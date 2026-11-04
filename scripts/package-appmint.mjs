@@ -1,77 +1,55 @@
 
 import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { resolve, join, dirname } from "node:path";
-import { spawnSync } from "node:child_process";
+  cp,
+  copyFile,
+  mkdir,
+  readdir,
+  rm,
+  stat,
+} from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 
-const releaseDir = resolve("release");
-const packageDir = resolve(releaseDir, "appmint");
-const zipPath = resolve(releaseDir, "LumineBlock-AppMint-Offline.zip");
-
-function findHtml(dir) {
-  if (!existsSync(dir)) return null;
-
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-
-    if (entry.isDirectory() && entry.name !== "node_modules") {
-      const found = findHtml(path);
-      if (found) return found;
-    }
-
-    if (entry.isFile() && entry.name === "index.html") {
-      return path;
-    }
-  }
-
-  return null;
-}
-
-const indexPath = findHtml(resolve("dist"));
-
-if (!indexPath) {
-  throw new Error(
-    "Nenhum index.html encontrado dentro de dist. Verifique a saída do Vite."
-  );
-}
-
-const outputDir = dirname(indexPath);
-
-console.log("HTML encontrado em:", indexPath);
-
-rmSync(packageDir, { recursive: true, force: true });
-rmSync(zipPath, { force: true });
-mkdirSync(packageDir, { recursive: true });
-
-cpSync(outputDir, packageDir, { recursive: true });
-
-writeFileSync(
-  resolve(packageDir, "LEIA-ME.txt"),
-  "LumineBlock - pacote pre-compilado para AppMint.\n" +
-  "Importe como ZIP offline.\n"
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  ".."
 );
 
-const html = readFileSync(indexPath, "utf8");
-
-if (!html.includes("<html") || !html.includes("<body")) {
-  throw new Error("O index.html encontrado parece invalido.");
-}
-
-const zip = spawnSync(
-  "zip",
-  ["-qr", zipPath, "."],
-  { cwd: packageDir, stdio: "inherit" }
+const source = path.join(root, ".output", "public");
+const release = path.join(root, "release");
+const appDir = path.join(release, "app");
+const shell = path.join(source, "_shell.html");
+const index = path.join(appDir, "index.html");
+const zipFile = path.join(
+  release,
+  "LumineBlock-AppMint-Offline.zip"
 );
 
-if (zip.status !== 0) {
-  throw new Error("Falha ao criar o ZIP.");
+if (!(await stat(source).catch(() => null))) {
+  throw new Error("A pasta .output/public não foi encontrada.");
 }
 
-console.log("ZIP preparado:", zipPath);
+if (!(await stat(shell).catch(() => null))) {
+  throw new Error("_shell.html não foi encontrado.");
+}
+
+await rm(release, { recursive: true, force: true });
+await mkdir(appDir, { recursive: true });
+
+// Copia todos os arquivos públicos, incluindo assets e fontes.
+await cp(source, appDir, { recursive: true });
+
+// Cria a página inicial esperada pelo empacotador.
+await copyFile(shell, index);
+
+execFileSync("zip", ["-qr", zipFile, "."], {
+  cwd: appDir,
+});
+
+const files = await readdir(appDir);
+
+console.log("Empacotamento concluído!");
+console.log("Página inicial: index.html");
+console.log("Arquivos copiados:", files.length);
+console.log("ZIP:", zipFile);
