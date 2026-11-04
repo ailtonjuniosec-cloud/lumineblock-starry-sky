@@ -19,3 +19,5 @@
 - Audio is synthesized with Web Audio in src/lib/audio.ts (no audio files). Why: tiny bundle, original sounds, voice cap prevents overlap.
 - Board/tray geometry stays dir="ltr" even in RTL languages. Why: drag-and-drop math assumes left-to-right columns.
 - Piece availability and game over are re-derived from the current board on every render in play.tsx (plus reducer `over`). Why: never rely on a stale check after lines clear.
+- Android: Capacitor wraps the SPA build (`spa.enabled`); `bun run build:android` copies _shell.html to index.html and strips all manifest permissions. Why: fully offline, no INTERNET permission needed for bundled assets.
+- Fonts are bundled via @fontsource imports in styles.css, never CDN links. Why: offline/privacy.
