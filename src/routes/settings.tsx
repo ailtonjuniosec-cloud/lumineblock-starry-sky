@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Monitor, Moon, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { Check, ChevronDown, Monitor, Moon, Sun } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Panel, Screen, ScreenHeader } from "@/components/lumine/ui";
 import { useI18n, type MsgKey } from "@/i18n";
 import { LANGUAGES, type LocaleCode } from "@/i18n/languages";
@@ -25,6 +25,8 @@ const THEMES: { id: ThemeMode; label: MsgKey; icon: ReactNode }[] = [
   { id: "dark", label: "dark", icon: <Moon className="size-5" /> },
   { id: "auto", label: "auto", icon: <Monitor className="size-5" /> },
 ];
+
+const POPULAR = ["auto", "pt-BR", "en", "es", "fr", "zh-CN", "ar", "hi"] as const;
 
 type BoolKey = "animations" | "effects" | "haptics" | "sfx" | "ambient";
 
@@ -83,6 +85,12 @@ function Volume({ k, label, disabled }: { k: "sfxVolume" | "ambientVolume"; labe
 function SettingsPage() {
   const s = useSettings();
   const { t } = useI18n();
+  const [expanded, setExpanded] = useState(false);
+  const all = [{ code: "auto" as const, name: t("languageAuto") }, ...LANGUAGES];
+  const top = all.filter((l) => (POPULAR as readonly string[]).includes(l.code));
+  // Keep the chosen language visible even when collapsed
+  if (!top.some((l) => l.code === s.language)) top.push(all.find((l) => l.code === s.language)!);
+  const extra = all.filter((l) => !top.includes(l));
   const pickLang = (code: LocaleCode | "auto") => {
     haptic(8);
     settingsStore.set({ language: code });
@@ -132,10 +140,10 @@ function SettingsPage() {
         <Panel delay={180} className="!px-2">
           <p className="mb-2 px-2 text-sm font-semibold">{t("language")}</p>
           <ul className="flex flex-col gap-0.5" role="radiogroup" aria-label={t("language")}>
-            {[{ code: "auto" as const, name: t("languageAuto") }, ...LANGUAGES].map((l) => {
+            {[...top, ...(expanded ? extra : [])].map((l, idx) => {
               const active = s.language === l.code;
               return (
-                <li key={l.code}>
+                <li key={l.code} className={idx >= top.length ? "anim-rise" : undefined} style={idx >= top.length ? { animationDelay: `${Math.min(idx - top.length, 12) * 20}ms` } : undefined}>
                   <button
                     role="radio"
                     aria-checked={active}
@@ -152,6 +160,14 @@ function SettingsPage() {
               );
             })}
           </ul>
+          <button
+            onClick={() => (haptic(8), setExpanded((v) => !v))}
+            aria-expanded={expanded}
+            className="press mx-auto mt-2 flex items-center gap-1 rounded-full px-4 py-1.5 text-xs font-semibold text-primary"
+          >
+            {expanded ? t("showLess") : t("showMore")}
+            <ChevronDown className={`size-4 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`} />
+          </button>
         </Panel>
       </div>
     </Screen>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, Info, Play, Settings2, Trophy } from "lucide-react";
+import { BarChart3, BookOpen, Info, Play, Settings2, Trophy } from "lucide-react";
 import { HeroBlocks } from "@/components/lumine/HeroBlocks";
 import { LogoMark, NavTile, Screen } from "@/components/lumine/ui";
 import { BOARD_SIZES } from "@/game/engine";
@@ -88,7 +88,8 @@ function Home() {
           </div>
         </div>
 
-        <nav className="anim-rise mt-4 mb-2 flex gap-3" style={{ animationDelay: "300ms" }}>
+        <nav className="anim-rise mt-4 mb-2 flex gap-2" style={{ animationDelay: "300ms" }}>
+          <NavTile to="/how-to-play" icon={<BookOpen className="size-5" />} label={t("howToPlay")} />
           <NavTile to="/stats" icon={<BarChart3 className="size-5" />} label={t("stats")} />
           <NavTile to="/settings" icon={<Settings2 className="size-5" />} label={t("settings")} />
           <NavTile to="/about" icon={<Info className="size-5" />} label={t("about")} />

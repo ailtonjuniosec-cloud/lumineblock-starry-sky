@@ -3,7 +3,7 @@ import { Home, Pause, Play as PlayIcon, RotateCcw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { BoardView, gapFor } from "@/components/game/BoardView";
 import { PieceView } from "@/components/game/PieceView";
-import { canPlace, findFullLines, isBoardSize, placePiece, type BoardSize, type Piece } from "@/game/engine";
+import { canPlace, canPlaceAnywhere, hasAnyMove, findFullLines, isBoardSize, placePiece, type BoardSize, type Piece } from "@/game/engine";
 import { useGame } from "@/game/useGame";
 import { haptic } from "@/lib/haptics";
 import { recordGame, useStats } from "@/lib/storage";
@@ -23,6 +23,8 @@ export const Route = createFileRoute("/play")({
       { property: "og:description", content: "Jogue LumineBlock: encaixe blocos com fluidez." },
     ],
   }),
+  // Pieces are random: render only in the browser so the first frame matches.
+  ssr: false,
   component: PlayPage,
 });
 
@@ -58,6 +60,9 @@ function Game({ n }: { n: number }) {
   const recorded = useRef(false);
   const startBest = useRef(stats.best);
   const best = Math.max(stats.best, state.score);
+  // Re-derived from the current board on every change: never a stale check.
+  const fits = useMemo(() => state.pieces.map((p) => !!p && canPlaceAnywhere(state.board, n, p.shape)), [state.board, state.pieces, n]);
+  const over = state.over || !hasAnyMove(state.board, n, state.pieces);
   const sizeName = t(`size${n}` as "size8");
   const gap = gapFor(n);
 
@@ -76,14 +81,14 @@ function Game({ n }: { n: number }) {
   }, [state.flash, clearFlash]);
 
   useEffect(() => {
-    if (state.over && !recorded.current) {
+    if (over && !recorded.current) {
       recorded.current = true;
       recordGame(state.score, n, state.lines);
       haptic([30, 60, 30]);
       playSfx("gameOver");
     }
-    if (!state.over) recorded.current = false;
-  }, [state.over, state.score, state.lines, n]);
+    if (!over) recorded.current = false;
+  }, [over, state.score, state.lines, n]);
 
   // Gentle sparkle the first time a run beats the previous personal best
   useEffect(() => {
@@ -139,7 +144,7 @@ function Game({ n }: { n: number }) {
 
   const onPointerDown = (index: number) => (e: RPointerEvent<HTMLDivElement>) => {
     const piece = state.pieces[index];
-    if (!piece || paused || state.over || !gridRef.current) return;
+    if (!piece || !fits[index] || paused || over || !gridRef.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     const rect = gridRef.current.getBoundingClientRect();
     const p = (rect.width + gap) / n;
@@ -159,7 +164,7 @@ function Game({ n }: { n: number }) {
     const h = hoverRef.current;
     hoverRef.current = null;
     setHover(null);
-    if (d && h && h.index === d.index && canPlace(state.board, n, d.piece.shape, h.r, h.c)) {
+    if (d && h && !over && h.index === d.index && canPlace(state.board, n, d.piece.shape, h.r, h.c)) {
       place(d.index, h.r, h.c);
       const placed = placePiece(state.board, n, d.piece, h.r, h.c);
       const { rows, cols } = findFullLines(placed, n);
@@ -167,7 +172,7 @@ function Game({ n }: { n: number }) {
       const total = rows.length + cols.length;
       playSfx(total > 1 ? "multi" : rows.length ? "line" : cols.length ? "column" : "place");
     } else if (d) haptic(4);
-  }, [state.board, n, place]);
+  }, [state.board, n, place, over]);
 
   const restart = () => {
     haptic(12);
@@ -178,7 +183,7 @@ function Game({ n }: { n: number }) {
   };
 
   const dragged = dragIndex !== null ? state.pieces[dragIndex] : null;
-  const newRecord = state.over && state.score > 0 && state.score > startBest.current;
+  const newRecord = over && state.score > 0 && state.score > startBest.current;
 
   return (
     <main className="safe-pad relative z-10 mx-auto flex h-dvh w-full max-w-xl select-none flex-col items-center overflow-hidden px-3" style={{ touchAction: "none" }}>
@@ -237,10 +242,15 @@ function Game({ n }: { n: number }) {
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
-            className={`glass-flat flex items-center justify-center rounded-3xl transition-opacity ${p ? "anim-pop cursor-grab" : ""}`}
-            style={{ opacity: dragIndex === i ? 0.25 : 1, animationDelay: `${i * 60}ms`, touchAction: "none" }}
+            aria-disabled={p ? !fits[i] : undefined}
+            aria-label={p && !fits[i] ? t("unavailable") : undefined}
+            className={`glass-flat relative flex items-center justify-center rounded-3xl transition-[opacity,filter] duration-300 ${p ? "anim-pop" : ""} ${p && fits[i] ? "cursor-grab" : ""} ${p && !fits[i] ? "cursor-not-allowed" : ""}`}
+            style={{ opacity: dragIndex === i ? 0.25 : p && !fits[i] ? 0.35 : 1, filter: p && !fits[i] ? "grayscale(0.85) brightness(0.9)" : "none", animationDelay: `${i * 60}ms`, touchAction: "none" }}
           >
             {p && <PieceView piece={p} cell={trayCell} gap={3} />}
+            {p && !fits[i] && (
+              <span className="absolute bottom-1.5 rounded-full bg-background/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{t("unavailable")}</span>
+            )}
           </div>
         ))}
       </div>
@@ -254,13 +264,15 @@ function Game({ n }: { n: number }) {
         </div>
       )}
 
-      {(paused || state.over) && (
+      {(paused || over) && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/40 px-6 backdrop-blur-md">
           <div className="glass anim-pop w-full max-w-xs rounded-[32px] p-6 text-center">
-            {state.over ? (
+            {over ? (
               <>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">{t("gameOver")}</p>
-                <p className="mt-3 font-display text-5xl font-extrabold text-gradient tabular-nums">{nf(state.score)}</p>
+                <h2 className="text-2xl font-extrabold tracking-tight">{t("gameOverTitle")}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t("noMoves")}</p>
+                <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">{t("finalScore")}</p>
+                <p className="mt-1 font-display text-5xl font-extrabold text-gradient tabular-nums">{nf(state.score)}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {newRecord ? t("newRecord") : t("recordValue", { n: nf(best) })}
                 </p>
@@ -273,19 +285,19 @@ function Game({ n }: { n: number }) {
               </>
             )}
             <div className="mt-6 flex flex-col gap-2">
-              {!state.over && (
+              {!over && (
                 <button onClick={() => (haptic(8), setPaused(false))} className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-primary font-semibold text-primary-foreground shadow-glow">
                   <PlayIcon className="size-5 fill-current" /> {t("resume")}
                 </button>
               )}
               <button
                 onClick={restart}
-                className={`press flex h-12 items-center justify-center gap-2 rounded-2xl font-semibold ${state.over ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground"}`}
+                className={`press flex h-12 items-center justify-center gap-2 rounded-2xl font-semibold ${over ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground"}`}
               >
-                <RotateCcw className="size-5" /> {state.over ? t("playAgain") : t("restart")}
+                <RotateCcw className="size-5" /> {t("restart")}
               </button>
               <Link to="/" className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-secondary font-semibold text-secondary-foreground">
-                <Home className="size-5" /> {t("home")}
+                <Home className="size-5" /> {over ? t("backHome") : t("home")}
               </Link>
             </div>
           </div>
