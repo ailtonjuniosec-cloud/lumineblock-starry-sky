@@ -1,0 +1,6 @@
+{
+  "appId": "com.projectlumine.lumineblock",
+  "appName": "LumineBlock",
+  "webDir": "dist/client",
+  "android": { "backgroundColor": "#1e1033" }
+}
