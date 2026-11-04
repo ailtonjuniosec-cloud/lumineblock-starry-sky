@@ -2,7 +2,9 @@
 name: Build LumineBlock for AppMint
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
