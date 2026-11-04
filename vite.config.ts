@@ -2,9 +2,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  base: "./",
+
   tanstackStart: {
     server: { entry: "server" },
-    // SPA shell so the Android app (Capacitor) loads fully offline from bundled files.
     spa: { enabled: true },
   },
 });
