@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { isBoardSize, type BoardSize } from "@/game/engine";
+import { isLocale, type LocaleCode } from "@/i18n/languages";
 
 export type ThemeMode = "light" | "dark" | "auto";
 export interface Settings {
@@ -8,11 +9,11 @@ export interface Settings {
   animations: boolean;
   effects: boolean;
   haptics: boolean;
-}
-export interface GameRecord {
-  score: number;
-  size: number;
-  at: number;
+  sfx: boolean;
+  sfxVolume: number;
+  ambient: boolean;
+  ambientVolume: number;
+  language: LocaleCode | "auto";
 }
 export interface Stats {
   best: number;
@@ -20,7 +21,6 @@ export interface Stats {
   last: number;
   bestLines: number;
   totalScore: number;
-  history: GameRecord[];
   bestBySize: Record<string, number>;
 }
 
@@ -30,6 +30,11 @@ export const DEFAULT_SETTINGS: Settings = {
   animations: true,
   effects: true,
   haptics: true,
+  sfx: true,
+  sfxVolume: 0.7,
+  ambient: false,
+  ambientVolume: 0.4,
+  language: "auto",
 };
 export const EMPTY_STATS: Stats = {
   best: 0,
@@ -37,7 +42,6 @@ export const EMPTY_STATS: Stats = {
   last: 0,
   bestLines: 0,
   totalScore: 0,
-  history: [],
   bestBySize: {},
 };
 
@@ -79,8 +83,17 @@ export const settingsStore = createStore<Settings>("lumineblock.settings", DEFAU
   ...s,
   boardSize: isBoardSize(s.boardSize) ? s.boardSize : 8,
   theme: ["light", "dark", "auto"].includes(s.theme) ? s.theme : "auto",
+  sfxVolume: clamp01(s.sfxVolume, DEFAULT_SETTINGS.sfxVolume),
+  ambientVolume: clamp01(s.ambientVolume, DEFAULT_SETTINGS.ambientVolume),
+  language: s.language === "auto" || isLocale(s.language) ? s.language : "auto",
 }));
-export const statsStore = createStore<Stats>("lumineblock.stats", EMPTY_STATS);
+function clamp01(v: unknown, d: number) {
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : d;
+}
+export const statsStore = createStore<Stats>("lumineblock.stats", EMPTY_STATS, (v) => {
+  const { history: _drop, ...rest } = v as Stats & { history?: unknown };
+  return rest;
+});
 
 export function useSettings(): Settings {
   return useSyncExternalStore(settingsStore.subscribe, settingsStore.get, () => DEFAULT_SETTINGS);
@@ -90,7 +103,7 @@ export function useStats(): Stats {
 }
 
 /** Pure reducer for recording a finished game (testable). */
-export function withGameResult(s: Stats, score: number, size: number, lines: number, at = Date.now()): Stats {
+export function withGameResult(s: Stats, score: number, size: number, lines: number): Stats {
   const key = String(size);
   return {
     best: Math.max(s.best, score),
@@ -98,7 +111,6 @@ export function withGameResult(s: Stats, score: number, size: number, lines: num
     last: score,
     bestLines: Math.max(s.bestLines, lines),
     totalScore: s.totalScore + score,
-    history: [{ score, size, at }, ...s.history].slice(0, 20),
     bestBySize: { ...s.bestBySize, [key]: Math.max(s.bestBySize[key] ?? 0, score) },
   };
 }
