@@ -337,7 +337,10 @@ function useCountUp(target: number) {
       else from.current = target;
     };
     raf = requestAnimationFrame(tick);
-    return () => (cancelAnimationFrame(raf), (from.current = target));
+    return () => {
+      cancelAnimationFrame(raf);
+      from.current = target;
+    };
   }, [target]);
   return v;
 }
