@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:android": "vite build && node scripts/android-offline.mjs && cap sync android && node scripts/android-offline.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
