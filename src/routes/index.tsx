@@ -33,7 +33,7 @@ function Home() {
             <h1 className="text-3xl font-extrabold leading-none tracking-tight">
               Lumine<span className="text-gradient">Block</span>
             </h1>
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Starry Sky</p>
+            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">Criado por Ailton Junio</p>
           </div>
         </div>
 
